@@ -15,11 +15,11 @@ from script_fr import SCENES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, "build")
-VOICE = os.environ.get("PIPER_VOICE", os.path.join(HERE, "voice", "fr-siwis-medium.onnx"))
+VOICE = os.environ.get("PIPER_VOICE", os.path.join(HERE, "voice", "fr_FR-tom-medium.onnx"))
 
 SR = 22050
 LEAD_IN = 0.25        # silence au début de la vidéo
-GAP_LINE = 0.16       # pause entre deux phrases
+GAP_SENT = 0.10       # pause entre deux phrases d'une même scène
 GAP_SCENE = 0.30      # pause en fin de scène
 TAIL = 1.6            # fin de vidéo
 
@@ -43,7 +43,7 @@ def parse(line):
     return " ".join(spoken_parts), words
 
 
-def trim(audio, thr=0.02):
+def trim(audio, thr=0.02):  # (non utilisé en lecture continue)
     idx = np.where(np.abs(audio) > thr)[0]
     if len(idx) == 0:
         return audio
@@ -64,35 +64,80 @@ def weight(voice, word):
     return max(1.0, n)
 
 
+def synth_scene(voice, cfg, lines):
+    """Lit toute la scène d'une traite (prosodie continue) et renvoie
+    (audio, [(mot_affiché, surligné, début, fin), ...] par ligne)."""
+    parsed = [parse(l) for l in lines]
+    text = " ".join(sp for sp, _ in parsed)
+    words = [w for _, ws in parsed for w in ws]
+    audio, times = [], []          # times : (temps, index de phonème cumulé)
+    n_ph = 0
+    t = 0.0
+    for i, ch in enumerate(voice.synthesize(text, syn_config=cfg, include_alignments=True)):
+        a = ch.audio_float_array.astype(np.float32)
+        if i:
+            gap = np.zeros(int(GAP_SENT * SR), dtype=np.float32)
+            audio.append(gap)
+            t += len(gap) / SR
+        al = ch.phoneme_alignments or []
+        tot = sum(int(x.num_samples) for x in al) or len(a)
+        k = len(a) / tot
+        # raccourcit les silences de début (^) et de fin ($) de phrase
+        head = int(al[0].num_samples * k) if al and al[0].phoneme == "^" else 0
+        tail = int(al[-1].num_samples * k) if al and al[-1].phoneme == "$" else 0
+        cut_h = max(0, head - int(0.03 * SR))
+        cut_t = max(0, tail - int(0.06 * SR))
+        a = a[cut_h:len(a) - cut_t] if cut_t else a[cut_h:]
+        acc = -cut_h
+        for x in al:
+            dur = int(x.num_samples) * k
+            if x.phoneme not in "^$ -,.:;!?" and x.phoneme not in "ˈˌ":
+                times.append((t + acc / SR, t + (acc + dur) / SR))
+            acc += dur
+        audio.append(a)
+        t += len(a) / SR
+    audio = np.concatenate(audio)
+    # répartit les mots sur les phonèmes réels au prorata de leur longueur attendue
+    exp = [weight(voice, w[2]) for w in words]
+    for j, w in enumerate(words):
+        if not any(ch.isalnum() for ch in w[2]):
+            exp[j] = 0.0
+    tot = sum(exp)
+    N = len(times)
+    out, acc = [], 0.0
+    for (disp, hl, _), e in zip(words, exp):
+        a = min(N - 1, int(round(acc / tot * N)))
+        b = min(N - 1, max(a, int(round((acc + e) / tot * N)) - 1))
+        out.append((disp, hl, times[a][0], times[b][1] if e else times[a][0]))
+        acc += e
+    per_line, k = [], 0
+    for _, ws in parsed:
+        per_line.append(out[k:k + len(ws)])
+        k += len(ws)
+    return audio, per_line
+
+
 def main():
+    global SR
     os.makedirs(BUILD, exist_ok=True)
-    voice = PiperVoice.load(VOICE)
-    cfg = SynthesisConfig(length_scale=0.86, noise_scale=0.6, noise_w_scale=0.7)
+    voice = PiperVoice.load(VOICE, include_alignments=True)
+    SR = voice.config.sample_rate
+    cfg = SynthesisConfig(length_scale=0.86, noise_scale=0.667, noise_w_scale=0.8)
 
     chunks = [np.zeros(int(LEAD_IN * SR), dtype=np.float32)]
     t = LEAD_IN
     timeline = []
     for sc in SCENES:
+        audio, lines = synth_scene(voice, cfg, sc["lines"])
         scene = dict(id=sc["id"], label=sc["label"], start=t, lines=[])
-        for i, line in enumerate(sc["lines"]):
-            spoken, words = parse(line)
-            audio = np.concatenate([c.audio_float_array for c in voice.synthesize(spoken, syn_config=cfg)])
-            audio = trim(audio.astype(np.float32))
-            dur = len(audio) / SR
-            ws = [weight(voice, w[2]) for w in words]
-            tot = sum(ws)
-            wt = []
-            acc = t
-            for (disp, hl, _), w in zip(words, ws):
-                d = dur * w / tot
-                wt.append(dict(w=disp, hl=hl, start=round(acc, 3), end=round(acc + d, 3)))
-                acc += d
-            scene["lines"].append(dict(start=t, end=t + dur, words=wt))
-            chunks.append(audio)
-            t += dur
-            gap = GAP_LINE if i < len(sc["lines"]) - 1 else GAP_SCENE
-            chunks.append(np.zeros(int(gap * SR), dtype=np.float32))
-            t += gap
+        for ws in lines:
+            wt = [dict(w=d, hl=h, start=round(t + a, 3), end=round(t + b, 3)) for d, h, a, b in ws]
+            scene["lines"].append(dict(start=wt[0]["start"], end=wt[-1]["end"], words=wt))
+        scene["lines"][0]["start"] = t
+        chunks.append(audio)
+        t += len(audio) / SR
+        chunks.append(np.zeros(int(GAP_SCENE * SR), dtype=np.float32))
+        t += GAP_SCENE
         scene["end"] = t
         timeline.append(scene)
         print(f"{sc['id']:10s} {scene['start']:6.2f} -> {t:6.2f}", file=sys.stderr)
