@@ -1,0 +1,8 @@
+{
+  "name": "moins50-3d",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vivre a -50 : video 3D (three.js rendu image par image dans Chromium headless)",
+  "scripts": { "render": "node render.js" },
+  "dependencies": { "three": "0.170.0" }
+}
