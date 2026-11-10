@@ -13,13 +13,33 @@ page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') 
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
 const STILL = process.argv[2] === 'still';
 if (STILL) await page.setViewportSize({ width: 1920, height: 1080 });
-await page.goto(`http://localhost:${port}/index.html${STILL ? '?still=1' : ''}`);
+const HQ = process.argv[2] === 'seg';
+await page.goto(`http://localhost:${port}/index.html${STILL ? '?still=1' : HQ ? '?hq=1' : ''}`);
 await page.waitForFunction('window.ready === true', null, { timeout: 120000 });
 const mode = process.argv[2] || 'preview';
 if (mode === 'preview' || mode === 'still') {
   const ts = (process.argv[3] || '2,8,15,20,27,31,35,39,43,48,52,55,59,64,68,72,76,83').split(',').map(Number);
   fs.mkdirSync(path.join(root, 'preview'), { recursive: true }); fs.mkdirSync(path.join(root, 'images'), { recursive: true });
   for (const t of ts) { const t0 = Date.now(); await page.evaluate((t) => window.renderAt(t), t); await page.screenshot({ timeout: 300000, path: path.join(root, mode === 'still' ? 'images' : 'preview', `t${String(t).padStart(5, '0')}.${mode === 'still' ? 'png' : 'jpg'}`), ...(mode === 'still' ? { type: 'png' } : { type: 'jpeg', quality: 80 }) }); console.log('t', t, Date.now() - t0, 'ms'); }
+} else if (mode === 'seg') {
+  // rendu par segments reprenables : node render.mjs seg [fps] [images par segment]
+  const fps = Number(process.argv[3] || 30), per = Number(process.argv[4] || 150), dur = await page.evaluate('window.DUR');
+  const n = Math.ceil(dur * fps), segDir = path.join(root, 'segs'); fs.mkdirSync(segDir, { recursive: true });
+  for (let s0 = 0, k = 0; s0 < n; s0 += per, k++) {
+    const out = path.join(segDir, `s${String(k).padStart(3, '0')}.mp4`);
+    if (fs.existsSync(out)) continue;
+    const tmp = out.replace('.mp4', '.tmp.mp4'), t0 = Date.now();
+    const ff = spawn('ffmpeg', ['-y', '-v', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-', '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-pix_fmt', 'yuv420p', tmp], { stdio: ['pipe', 'inherit', 'inherit'] });
+    for (let f = s0; f < Math.min(n, s0 + per); f++) {
+      await page.evaluate((t) => window.renderAt(t), f / fps);
+      const buf = await page.screenshot({ timeout: 300000, type: 'png' });
+      if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
+    }
+    ff.stdin.end(); await new Promise((r) => ff.on('close', r));
+    fs.renameSync(tmp, out);
+    console.log(`segment ${k} (${s0}-${Math.min(n, s0 + per) - 1}) ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+  }
+  console.log('ALL_DONE');
 } else {
   const fps = Number(process.argv[3] || 30), dur = await page.evaluate('window.DUR');
   const n = Math.ceil(dur * fps);

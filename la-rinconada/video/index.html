@@ -146,6 +146,8 @@ const op = (id, v) => { $(id).style.opacity = v.toFixed(3); };
 
 window.DUR = DUR;
 const STILL = new URLSearchParams(location.search).has('still');
+const HQ = new URLSearchParams(location.search).has('hq');
+if (HQ) { renderer.setPixelRatio(2); PR = 2; }
 if (STILL) { renderer.setPixelRatio(2); PR = 2; document.querySelectorAll('.ov,#cap,#heart').forEach((e) => e.style.display = 'none'); }
 window.renderAt = (t) => {
   let i = bounds.findIndex(([a, b]) => t >= a && t < b); if (i < 0) i = bounds.length - 1;
