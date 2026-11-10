@@ -503,7 +503,7 @@ export function person(o = {}) {
     head.add(sph(0.03, cheek, sx * 0.078, 0.13, 0.083, 1, 0.8, 0.5));
     head.add(sph(0.025, skin, sx * 0.132, 0.17, 0, 0.5, 1, 0.8));
   }
-  const nose = sph(0.02, std(0xc48a66, 0.65), 0, 0.15, 0.128, 0.85, 1.25, 0.9); head.add(nose);
+  const nose = sph(0.017, skin, 0, 0.148, 0.131, 1, 1.1, 0.9); head.add(nose);
   let mouth = null;
   const mouthM = std(0x5a2a22, 0.6);
   g.setSmile = (k) => {

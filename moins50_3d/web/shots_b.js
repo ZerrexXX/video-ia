@@ -15,7 +15,7 @@ function s11() {
   scene.add(snowGround(400, 0xdde6f0, 120));
   const b = building({ w: 48, d: 14, px: 112, lift: 1.9, pipes: true, balconies: true, pileStep: 2.4, pileRows: 5, seed: 12, lit: 0.6, glow: 1.8 });
   b.position.set(0, 0, -7); shadows(b); scene.add(b);
-  const back = new THREE.PointLight(SODIUM, 160, 50, 1.4); back.position.set(-5, 0.9, -17); scene.add(back);
+  const back = new THREE.PointLight(SODIUM, 55, 50, 1.4); back.position.set(-5, 0.9, -17); scene.add(back);
   const hb = halo(SODIUM, 9, 0.9); hb.position.set(-5, 1.0, -17.5); scene.add(hb);
   const hb2 = halo(SODIUM, 7, 0.7); hb2.position.set(9, 1.0, -18); scene.add(hb2);
   const l = lamp({ light: 320 }); l.position.set(9, 0, 5); l.rotation.y = Math.PI * 0.75; scene.add(l);
@@ -124,8 +124,8 @@ function s13() {
     if (kind === 1) for (let k = 0; k < 9; k++) { const m = box(0.34, 0.16, 0.24, std(k % 3 ? 0x6e2420 : 0x8a3a30, 0.6), x + (R() - 0.5) * 0.2, 0.95 + ((k / 3) | 0) * 0.165, z - 0.8 + (k % 3) * 0.36); m.rotation.y = (R() - 0.5) * 0.3; g.add(m); }
     if (kind !== 0) for (let k = 0; k < 2; k++) {
       const bx = x + (k ? 0.2 : -0.15), bz = z + 0.75 + k * 0.38;
-      g.add(cyl(0.15, 0.12, 0.26, std(k ? 0x3a5a8a : 0xb8bec5, 0.4, 0.5), bx, 1.0, bz, 14));
-      g.add(sph(0.14, std(k ? 0x8a1428 : 0xb82a2a, 0.5, 0, { bumpMap: noiseTex(), bumpScale: 8 }), bx, 1.12, bz, 1, 0.45, 1));
+      g.add(cyl(0.15, 0.12, 0.26, std(k ? 0x3a5a8a : 0x8a9098, 0.7, 0), bx, 1.0, bz, 14));
+      g.add(sph(0.14, std(k ? 0x8a1428 : 0xb82a2a, 0.6), bx, 1.12, bz, 1, 0.45, 1));
     } else crate(x, 0.87, z + 0.9, 0.05);
     shadows(g);
   }
@@ -179,7 +179,7 @@ function s14() {
   fishG.add(sph(0.075, fur, 0.0, 0.6, 0.0, 1, 1.2, 0.9)); fishG.add(cyl(0.07, 0.085, 0.5, std(0x6a2a3a, 0.8), -0.12, 0.84, -0.02, 12).rotateZ(0.5));
   // couteau
   const knife = new THREE.Group(); knife.rotation.z = 0.78; scene.add(knife);
-  knife.add(box(0.24, 0.05, 0.004, std(0xd8dde2, 0.2, 0.95), 0.03, 0, 0)); knife.add(cyl(0.016, 0.018, 0.13, std(0x3a2416, 0.6), 0.215, 0, 0, 10).rotateZ(Math.PI / 2));
+  knife.add(box(0.24, 0.05, 0.004, std(0xd8dde2, 0.3, 0.55), 0.03, 0, 0)); knife.add(cyl(0.016, 0.018, 0.13, std(0x3a2416, 0.6), 0.215, 0, 0, 10).rotateZ(Math.PI / 2));
   knife.add(sph(0.075, fur, 0.26, -0.01, 0.01, 1.2, 1, 0.9)); knife.add(cyl(0.07, 0.09, 0.6, std(0x6a2a3a, 0.8), 0.6, -0.02, 0.05, 12).rotateZ(Math.PI / 2));
   // copeaux enroulés
   const curlGeo = (() => {
@@ -201,7 +201,8 @@ function s14() {
   shadows(fishG); shadows(knife); shadows(plate);
   const breath = emitter({ n: 9, origin: [0.3, 0.12, 0.42], spread: [0.2, 0.1, 0.1], vel: [-0.22, 0.14, -0.05], velRand: [0.1, 0.08, 0.08], life: 2.4, size0: 0.12, size1: 0.5, opacity: 0.22, fog: false }); scene.add(breath);
   const dust = snowfall(120, { box: [1.4, 0.9, 1.2], size: 0.004, speed: 0.03, sparkle: 0.9, color: 0xfff0d8 }); scene.add(dust);
-  const cam = camera(35, 0.02, 500);
+  const cam = camera(35, 0.02, 4000);
+  const gnd = snowGround(200, 0xd5dee9, 60); gnd.position.y = -0.86; scene.add(gnd);
   const ax = V(-Math.sin(0.78), Math.cos(0.78), 0), nose = V(0.16, 0.035, 0);
   const kpos = (s) => nose.clone().addScaledVector(ax, s * 0.6).add(V(0, 0, 0.052));
   const DUR = 0.5;
@@ -232,7 +233,7 @@ function s14() {
 function wasteland() {
   const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0xd3bdb0, 0.0075);
   const sunDir = V(0.0, 0.17, -1).normalize();
-  scene.add(sky(0x35629f, 0xe9bd98, { sunDir, sunCol: 0xffa050, sunPow: 0.55, exp: 0.5 }));
+  scene.add(sky(0x35629f, 0xf0b888, { sunDir, sunCol: 0xff9440, sunPow: 0.7, exp: 0.5 }));
   scene.add(new THREE.HemisphereLight(0x9fc0f4, 0x8f96a4, 0.8));
   const sun = shadowLight(new THREE.DirectionalLight(0xffb070, 3.4), 7, 120, 2048); sun.position.copy(sunDir).multiplyScalar(50); scene.add(sun, sun.target);
   const front = new THREE.DirectionalLight(0xbcd4ff, 0.5); front.position.set(2, 2, 6); scene.add(front);
@@ -275,7 +276,7 @@ function s15() {
     S.steam.position.copy(p).add(V(0.05, 0.1, 0)); S.steam.update(t + 2);
     S.em.forEach((e) => e.update(t + 20)); S.dust.update(t, [0.5, 0, 1]);
     look(cam, 1.15 - 0.1 * t, 1.25, 3.4 - 0.2 * t, 0.12, 1.22, 0);
-    fx.bloom = 0.5; fx.threshold = 0.9; fx.exposure = 0.82;
+    fx.bloom = 0.5; fx.threshold = 0.9; fx.exposure = 0.82; fx.warm = 0.4; fx.sat = 0.95;
   } };
 }
 function s16() {
@@ -294,8 +295,8 @@ function s16() {
     return { te, p: p0.clone(), v: v0.clone().multiplyScalar(boost * (0.55 + R() * 0.9)).add(V((R() - 0.5) * sp + 0.5, (R() - 0.3) * sp + 0.9, (R() - 0.5) * sp)), k: 0.8 + R() * 0.9, r: R(), r2: R(), dr: V((R() - 0.5) * 0.25 + 0.14, 0.05 + R() * 0.16, (R() - 0.5) * 0.2) };
   };
   for (let i = 0; i < N; i++) PS.push(mk(1.6, 2.3));
-  const cry = points(N, { color: 0xfff4de, color2: 0xffc070, sparkle: 0.55, seed: 2, gain: 1.15 }); scene.add(cry);
-  const NV = 120, VS = [], white = new THREE.Color(0xa9b6cc), gold = new THREE.Color(0xffe2b0), tmpC = new THREE.Color();
+  const cry = points(N, { color: 0xffe6bc, color2: 0xffb458, sparkle: 0.55, seed: 2, gain: 1.15 }); scene.add(cry);
+  const NV = 120, VS = [], white = new THREE.Color(0xb4b4c4), gold = new THREE.Color(0xffd69a), tmpC = new THREE.Color();
   for (let i = 0; i < NV; i++) {
     const q = mk(1.0, 1.9), s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex(i % 3), transparent: true, opacity: 0, depthWrite: false, rotation: R() * 6.28, fog: false }));
     scene.add(s); VS.push({ ...q, s });
@@ -333,7 +334,7 @@ function s16() {
     const e = easeIn(prog(t, 4.3, 6));
     cam.getWorldDirection(dir);
     for (const f of fill) { f.s.position.copy(cp).addScaledVector(dir, 2.2 + f.r[2]).add(V(f.r[0] * 2.2, f.r[1] * 3.6 + 0.4, 0)); f.s.scale.setScalar(1.5 + e * 4); f.s.material.opacity = e * 0.75; }
-    fx.white = ease(prog(t, 5.15, 5.95)); fx.bloom = 0.55; fx.threshold = 0.9; fx.exposure = 0.8;
+    fx.white = ease(prog(t, 5.15, 5.95)); fx.bloom = 0.6; fx.threshold = 0.88; fx.exposure = 0.8; fx.warm = 0.5; fx.sat = 1;
   } };
 }
 
