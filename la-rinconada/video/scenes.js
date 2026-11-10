@@ -5,8 +5,10 @@ import {
   makePerson, makeRocks, makeParticles, updateParticles, softTexture, corrugated, makePoles, makeSmoke, noiseTexture, makePerson2, makeGlacier, makeBoulders, makePuddles
 } from './lib.js';
 
-const ASPECT = 16 / 9;
-const cam = (fov = 45) => new THREE.PerspectiveCamera(fov, ASPECT, 0.05, 2000);
+const ASPECT = 9 / 16; // format vertical TikTok
+// fov donné = angle horizontal voulu ×1.15 de l'ancien vertical → on calcule l'angle vertical
+const vfov = (f) => 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(f * 1.15) / 2) / ASPECT) * 180 / Math.PI;
+const cam = (fov = 45) => new THREE.PerspectiveCamera(vfov(fov), ASPECT, 0.05, 2000);
 
 // ---------- Ville (partagée par plusieurs scènes, avec éclairage variable) ----------
 export function townScene({ mood }) {

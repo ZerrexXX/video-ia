@@ -4,33 +4,33 @@
 <meta charset="utf-8">
 <title>La Rinconada 3D</title>
 <style>
-  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+  html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
   canvas { position: absolute; inset: 0; }
   .layer { position: absolute; inset: 0; pointer-events: none; }
   #vignette { background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%); }
   #heart { background: radial-gradient(ellipse at center, rgba(120,0,0,0) 45%, rgba(170,0,0,.75) 100%); opacity: 0; }
   #fade { background: #000; opacity: 1; }
-  #cap { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); width: 1500px; text-align: center;
-    color: #fff; font-weight: 800; font-size: 50px; line-height: 1.2; letter-spacing: -.5px;
+  #cap { position: absolute; left: 50%; bottom: 560px; transform: translateX(-50%); width: 900px; text-align: center;
+    color: #fff; font-weight: 800; font-size: 58px; line-height: 1.2; letter-spacing: -.5px;
     text-shadow: 0 3px 12px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,1); }
   .ov { position: absolute; opacity: 0; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,.8); }
-  #title { left: 0; right: 0; top: 330px; text-align: center; }
-  #title h1 { margin: 0; font-family: 'Inter Display', 'Inter'; font-weight: 900; font-size: 170px; letter-spacing: 14px; }
+  #title { left: 0; right: 0; top: 560px; text-align: center; }
+  #title h1 { margin: 0; font-family: 'Inter Display', 'Inter'; font-weight: 900; font-size: 112px; letter-spacing: 5px; }
   #title p { margin: 8px 0 0; font-size: 40px; font-weight: 600; letter-spacing: 18px; opacity: .85; }
-  #alti { right: 110px; top: 110px; text-align: right; font-family: 'JetBrains Mono', monospace; }
+  #alti { right: 160px; top: 250px; text-align: right; font-family: 'JetBrains Mono', monospace; }
   #alti .v { font-size: 88px; font-weight: 800; color: #ffd27a; }
   #alti .l { font-size: 26px; letter-spacing: 6px; opacity: .8; }
-  #o2 { left: 120px; top: 150px; width: 620px; }
+  #o2 { left: 80px; top: 260px; width: 760px; }
   .bar { height: 38px; border: 3px solid rgba(255,255,255,.85); border-radius: 10px; margin: 10px 0 26px; overflow: hidden; }
   .bar i { display: block; height: 100%; background: linear-gradient(90deg,#57c7ff,#9be7ff); }
   .lab { font-size: 30px; font-weight: 700; display: flex; justify-content: space-between; }
-  #check { left: 120px; top: 130px; font-size: 54px; font-weight: 800; }
+  #check { left: 80px; top: 260px; font-size: 56px; font-weight: 800; }
   #check div { opacity: 0; margin-bottom: 18px; }
   #check b { color: #ff5252; margin-right: 22px; }
-  #pop { right: 120px; top: 140px; text-align: right; }
+  #pop { left: 80px; top: 560px; text-align: left; }
   #pop .v { font-family: 'Inter Display','Inter'; font-size: 140px; font-weight: 900; color: #ffd27a; line-height: 1; }
   #pop .l { font-size: 36px; font-weight: 700; letter-spacing: 4px; }
-  #cal { left: 120px; top: 120px; }
+  #cal { left: 80px; top: 260px; }
   #cal .grid { display: grid; grid-template-columns: repeat(10, 64px); gap: 10px; }
   #cal .d { height: 64px; border-radius: 8px; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35); font: 700 24px 'JetBrains Mono'; display: flex; align-items: center; justify-content: center; position: relative; }
   #cal .d.x::after { content: '✕'; position: absolute; color: #ff5252; font-size: 46px; font-family: 'Inter'; font-weight: 900; }
@@ -38,16 +38,16 @@
   #cal .hdr { font-size: 34px; font-weight: 800; margin-bottom: 18px; letter-spacing: 3px; }
   #cal .pay { margin-top: 22px; font-size: 44px; font-weight: 900; }
   #cal .pay span { color: #ff5252; }
-  #atoi { left: 0; right: 0; top: 380px; text-align: center; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 150px; color: #ffcf4d; letter-spacing: 10px; text-shadow: 0 0 40px rgba(255,180,0,.7), 0 6px 24px rgba(0,0,0,.8); }
-  .lower { left: 120px; bottom: 260px; border-left: 10px solid #ffcf4d; padding-left: 26px; }
+  #atoi { left: 0; right: 0; top: 760px; text-align: center; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 150px; color: #ffcf4d; letter-spacing: 10px; text-shadow: 0 0 40px rgba(255,180,0,.7), 0 6px 24px rgba(0,0,0,.8); }
+  .lower { left: 80px; bottom: 780px; border-left: 10px solid #ffcf4d; padding-left: 26px; }
   .lower .t { font-size: 72px; font-weight: 900; letter-spacing: 4px; }
   .lower .s { font-size: 32px; font-weight: 600; opacity: .9; }
-  .warn { right: 120px; top: 120px; background: rgba(255,214,0,.92); color: #111; text-shadow: none; padding: 20px 34px; border-radius: 12px; font-size: 44px; font-weight: 900; border: 5px solid #111; }
-  #zero { left: 0; right: 0; top: 360px; text-align: center; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 220px; color: #ff5252; }
+  .warn { left: 80px; top: 260px; background: rgba(255,214,0,.92); color: #111; text-shadow: none; padding: 20px 34px; border-radius: 12px; font-size: 44px; font-weight: 900; border: 5px solid #111; }
+  #zero { left: 0; right: 0; top: 620px; text-align: center; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 220px; color: #ff5252; }
   #zero small { display: block; font-size: 44px; color: #fff; letter-spacing: 8px; font-family: 'Inter'; }
-  #day1 { left: 0; right: 0; top: 360px; text-align: center; font: 900 160px 'JetBrains Mono', monospace; }
-  #final { left: 0; right: 0; top: 380px; text-align: center; }
-  #final h1 { margin: 0; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 130px; letter-spacing: 12px; }
+  #day1 { left: 0; right: 0; top: 700px; text-align: center; font: 900 140px 'JetBrains Mono', monospace; }
+  #final { left: 0; right: 0; top: 620px; text-align: center; }
+  #final h1 { margin: 0; font-family: 'Inter Display','Inter'; font-weight: 900; font-size: 108px; letter-spacing: 5px; }
   #final p { margin: 12px 0 0; font-size: 44px; font-weight: 600; letter-spacing: 14px; color: #ffd27a; }
 </style>
 <script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
@@ -88,7 +88,7 @@ const starts = []; S.forEach((x) => { if (starts[x.scene] === undefined) starts[
 const bounds = starts.map((a, i) => [i === 0 ? 0 : a - 0.25, i < starts.length - 1 ? starts[i + 1] - 0.25 : DUR]);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(1); renderer.setSize(1920, 1080);
+renderer.setPixelRatio(1); renderer.setSize(1080, 1920);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 document.body.prepend(renderer.domElement);
@@ -116,18 +116,18 @@ const Grade = {
       gl_FragColor = vec4(max(c.rgb, 0.0), 1.0);
     }`
 };
-const rt = new THREE.WebGLRenderTarget(1920, 1080, { type: THREE.HalfFloatType, samples: 4 });
+const rt = new THREE.WebGLRenderTarget(1080, 1920, { type: THREE.HalfFloatType, samples: 4 });
 let PR = 1, active = null;
 function buildComp(sc) {
   const p = sc.post || {}, comp = new EffectComposer(renderer, rt.clone()); comp.setPixelRatio(PR);
-  comp.setSize(1920, 1080);
+  comp.setSize(1080, 1920);
   comp.addPass(new RenderPass(sc.scene, sc.camera));
-  if (!p.noAO) { const ao = new GTAOPass(sc.scene, sc.camera, 1920, 1080); ao.updateGtaoMaterial({ radius: p.aoRadius ?? 0.6, distanceExponent: 1.5, thickness: 1.5, scale: 1.2 }); ao.blendIntensity = 0.9;
+  if (!p.noAO) { const ao = new GTAOPass(sc.scene, sc.camera, 1080, 1920); ao.updateGtaoMaterial({ radius: p.aoRadius ?? 0.6, distanceExponent: 1.5, thickness: 1.5, scale: 1.2 }); ao.blendIntensity = 0.9;
     ao.overrideVisibility = function () { const c = this._visibilityCache; this.scene.traverse((o) => { c.set(o, o.visible); if (o.isPoints || o.isLine || o.isSprite || (o.material && o.material.transparent)) o.visible = false; }); };
     comp.addPass(ao); }
   if (p.dof) { const b = new BokehPass(sc.scene, sc.camera, { focus: 5, aperture: p.dof.aperture, maxblur: p.dof.maxblur }); comp.addPass(b); sc.bokeh = b; }
   const [bs, br, bt] = p.bloom || [0.5, 0.5, 0.8];
-  comp.addPass(new UnrealBloomPass(new THREE.Vector2(960, 540), bs, br, bt));
+  comp.addPass(new UnrealBloomPass(new THREE.Vector2(540, 960), bs, br, bt));
   comp.addPass(new OutputPass());
   const g = new ShaderPass(Grade); g.uniforms.tint.value.set(...(p.grade || [1, 1, 1])); comp.addPass(g); sc.grade = g;
   sc.comp = comp;
@@ -167,7 +167,7 @@ window.renderAt = (t) => {
 
   // sous-titres
   const cur = S.find((x) => t >= x.start - 0.05 && t < x.end + 0.15);
-  const cap = $('cap'); cap.textContent = cur ? cur.text : ''; cap.style.opacity = cur ? Math.min(smooth(cur.start - 0.05, cur.start + 0.1, t), 1 - smooth(cur.end, cur.end + 0.15, t)) : 0;
+  const cap = $('cap'); cap.textContent = cur ? cur.text.replace(/(\d) (\d)/g, '$1\u00a0$2') : ''; cap.style.opacity = cur ? Math.min(smooth(cur.start - 0.05, cur.start + 0.1, t), 1 - smooth(cur.end, cur.end + 0.15, t)) : 0;
 
   // incrustations
   op('title', win(t, 6.0, 11.8, 0.5));

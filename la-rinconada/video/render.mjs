@@ -8,11 +8,11 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 const srv = http.createServer((q, r) => { const f = path.join(root, decodeURIComponent(q.url.split('?')[0])); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' }); r.end(d); }); }).listen(0);
 const port = srv.address().port;
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('[page]', m.text()); });
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
 const STILL = process.argv[2] === 'still';
-if (STILL) await page.setViewportSize({ width: 1920, height: 1080 });
+if (STILL) await page.setViewportSize({ width: 1080, height: 1920 });
 const HQ = process.argv[2] === 'seg';
 await page.goto(`http://localhost:${port}/index.html${STILL ? '?still=1' : HQ ? '?hq=1' : ''}`);
 await page.waitForFunction('window.ready === true', null, { timeout: 120000 });
