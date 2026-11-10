@@ -265,9 +265,15 @@ export function sCoca2() {
   const hand = new THREE.Group(); hand.position.y = -0.32; { const arm = miner.userData.arms[0]; const kids = arm.children.slice(1); kids.forEach((k) => { k.position.y += 0.32; hand.add(k); }); arm.add(hand); }
   const held = new THREE.Group();
   for (let i = 0; i < 14; i++) { const l = new THREE.Mesh(leafGeo, leafMat()); const a = (i / 13 - 0.5) * 2.2; l.scale.setScalar(0.19 + lr() * 0.05); l.position.set(Math.sin(a) * 0.06, -0.06 - Math.cos(a) * 0.03, 0.04 + i * 0.002); l.rotation.set((lr() - 0.5) * 0.3, (lr() - 0.5) * 0.4, a + Math.PI); held.add(l); }
-  held.position.set(0.02, -0.33, 0.12); held.rotation.set(0.9, 0, 0); hand.add(held);
+  held.position.set(0.02, -0.33, 0.12); held.rotation.set(0.9, 0, 0); hand.add(held); held.visible = false;
+  // bouche + feuilles de coca qui en dépassent
+  const hd = miner.userData.head;
+  const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), std(0x3a1410, { roughness: 0.6 })); mouth.scale.set(1.2, 0.55, 0.5); mouth.position.set(0, -0.075, 0.128); hd.add(mouth);
+  const inMouth = new THREE.Group(); inMouth.position.set(0, -0.075, 0.13); hd.add(inMouth);
+  const mouthLeaf = leafGeo.clone(); mouthLeaf.translate(0, 0.5, 0); mouthLeaf.rotateX(Math.PI / 2); mouthLeaf.rotateZ(Math.PI / 2);
+  [[-0.35, 0.35], [0.0, 0.05], [0.3, -0.25], [-0.1, -0.5], [0.45, 0.5]].forEach(([yaw, pitch]) => { const l = new THREE.Mesh(mouthLeaf, leafMat()); l.scale.setScalar(0.12); l.position.set(0, 0, -0.02); l.rotation.set(pitch, yaw, 0); inMouth.add(l); });
   // joue gonflée (boule de coca)
-  const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), std(0x8a5636, { roughness: 0.6 })); cheek.position.set(-0.09, -0.04, 0.07); miner.userData.head.add(cheek);
+  const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), std(0x8a5636, { roughness: 0.6 })); cheek.position.set(-0.085, -0.05, 0.06); cheek.scale.setScalar(0.75); miner.userData.head.add(cheek);
   const c = cam(38);
   return {
     scene: s, camera: c, update(t, d) {
@@ -277,13 +283,13 @@ export function sCoca2() {
       legs[0].rotation.x = Math.sin(ph) * 0.4; legs[1].rotation.x = -Math.sin(ph) * 0.4;
       arms[1].rotation.x = Math.sin(ph) * 0.3; torso.rotation.x = 0.12;
       // la main côté caméra remonte la poignée de feuilles vers la bouche
-      const lift = smooth(0.2, 1.2, t);
+      const lift = 0;
       arms[0].rotation.x = lerp(-Math.sin(ph) * 0.3, -1.05, lift); arms[0].rotation.z = lerp(0, 0.35, lift);
       hand.rotation.x = lerp(0, -2.1 + Math.sin(t * 1.5) * 0.08, lift); hand.rotation.z = lerp(0, -0.4, lift);
       head.rotation.y = 0.3; head.rotation.x = -0.1;
-      const cx = mx + 1.9, cz = mz - 2.1;
-      c.position.set(cx, height(mx, mz) + 1.6, cz);
-      c.lookAt(mx + 0.1, height(mx, mz) + 1.5, mz);
+      const cx = mx + 1.25, cz = mz - 1.45;
+      c.position.set(cx, height(mx, mz) + 1.75, cz);
+      c.lookAt(mx + 0.05, height(mx, mz) + 1.55, mz);
       c.userData.focus = c.position.distanceTo(miner.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
       tick(t + 30); line(t);
     }, post: { bloom: [0.35, 0.5, 0.95], grade: [1.15, 1.12, 1.06], dof: { aperture: 0.0025, maxblur: 0.008 } }
