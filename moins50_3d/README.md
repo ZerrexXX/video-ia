@@ -27,7 +27,15 @@ node render.js --preview 1,14.5,46 --scale 0.5   # images fixes dans build/
 node render.js --jobs 2 --crf 21 --resume        # options : parallélisme, qualité, reprise
 ```
 
-Compter environ 2 à 3 s par image en 1080x1920 sur 4 CPU sans GPU.
+Le rendu brut (CRF 19, ~390 Mo à cause du grain) est ensuite ramené sous 50 Mo :
+
+```bash
+mv vivre_a_moins_50_3d.mp4 build/master.mp4
+ffmpeg -i build/master.mp4 -c:v libx264 -preset slow -b:v 5900k -maxrate 9000k -bufsize 18000k \
+  -pix_fmt yuv420p -c:a copy -movflags +faststart vivre_a_moins_50_3d.mp4
+```
+
+Compter environ 2 à 3 s par image (38 min pour les 1800 images avec 3 processus) en 1080x1920 sur 4 CPU sans GPU.
 
 ## Écarts par rapport au découpage
 
