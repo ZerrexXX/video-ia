@@ -474,8 +474,8 @@ export function person(o = {}) {
   if (outfit === 'parka') {
     torso.add(box(0.025, 0.7, 0.02, std(0x0e1630, 0.5, 0.4), 0, 0.4, 0.168));
     torso.add(box(0.13, 0.11, 0.02, std(0x182654, 0.7), -0.11, 0.2, 0.165)); torso.add(box(0.13, 0.11, 0.02, std(0x182654, 0.7), 0.11, 0.2, 0.165));
-    const hood = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.06, 8, 16, Math.PI * 1.25), furM);
-    hood.rotation.set(Math.PI / 2 - 0.5, 0, Math.PI * 0.875 + Math.PI); hood.position.set(0, 0.8, -0.06); torso.add(hood);
+    const hood = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.042, 8, 18), furM);
+    hood.rotation.x = Math.PI / 2; hood.position.set(0, 0.765, -0.03); hood.scale.set(1.12, 0.9, 1); torso.add(hood);
     const hem = cyl(0.255, 0.255, 0.05, std(0x152252, 0.8), 0, 0.02, 0, 16); hem.scale.z = 0.72; torso.add(hem);
   }
   // bras
@@ -495,15 +495,15 @@ export function person(o = {}) {
   const head = new THREE.Group(); head.position.y = 1.5; g.add(head);
   head.add(cyl(0.055, 0.06, 0.1, skin, 0, 0.02, 0, 10));
   const skull = sph(0.13, skin, 0, 0.17, 0, 1, 1.12, 1.02, 24); head.add(skull);
-  const cheek = std(0xc8705a, 0.7);
+  const cheek = std(0xc47a5e, 0.7), eyes = [];
   for (const sx of [-1, 1]) {
-    head.add(sph(0.022, dark, sx * 0.05, 0.19, 0.112, 1.35, 0.5, 0.5));
-    head.add(sph(0.005, std(0xffffff, 0.2, 0, { emissive: 0xffffff, emissiveIntensity: 0.5 }), sx * 0.05 + 0.008, 0.195, 0.124));
-    const br = box(0.05, 0.011, 0.012, dark, sx * 0.052, 0.228, 0.115); br.rotation.z = -sx * 0.12; head.add(br);
-    head.add(sph(0.035, cheek, sx * 0.075, 0.13, 0.085, 1, 0.8, 0.5));
+    const eye = sph(0.025, dark, sx * 0.05, 0.19, 0.11, 1.4, 0.5, 0.5); head.add(eye); eyes.push(eye);
+    head.add(sph(0.005, std(0xffffff, 0.2, 0, { emissive: 0xffffff, emissiveIntensity: 0.5 }), sx * 0.05 + 0.008, 0.196, 0.1235));
+    const br = box(0.055, 0.013, 0.012, dark, sx * 0.052, 0.224, 0.116); br.rotation.z = -sx * 0.12; head.add(br);
+    head.add(sph(0.03, cheek, sx * 0.078, 0.13, 0.083, 1, 0.8, 0.5));
     head.add(sph(0.025, skin, sx * 0.132, 0.17, 0, 0.5, 1, 0.8));
   }
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.05, 5), std(0xc07f5e, 0.7)); nose.position.set(0, 0.155, 0.135); nose.rotation.x = -0.35; head.add(nose);
+  const nose = sph(0.02, std(0xc48a66, 0.65), 0, 0.15, 0.128, 0.85, 1.25, 0.9); head.add(nose);
   let mouth = null;
   const mouthM = std(0x5a2a22, 0.6);
   g.setSmile = (k) => {
@@ -529,12 +529,12 @@ export function person(o = {}) {
   const scarfM = std(o.scarfColor ?? RED, 0.95, 0, { bumpMap: noiseTex(), bumpScale: 2 });
   const scarf = new THREE.Group(); g.add(scarf);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.055, 10, 18), scarfM); ring.rotation.x = Math.PI / 2; ring.position.y = 1.5; ring.scale.set(1, 1, 0.9); scarf.add(ring);
-  const tail = box(0.1, 0.3, 0.035, scarfM, 0.09, 1.33, 0.17); tail.rotation.z = -0.08; scarf.add(tail);
+  const tail = box(0.085, 0.25, 0.03, scarfM, 0.085, 1.35, 0.175); tail.rotation.z = -0.08; scarf.add(tail);
   const up = new THREE.Mesh(new THREE.SphereGeometry(0.139, 20, 8, 0.25, Math.PI - 0.5, 1.72, 0.95), scarfM);
   up.position.set(0, 1.67, 0.004); up.scale.set(1.03, 1.12, 1.08); scarf.add(up);
   const sc = o.scarf ?? 'up';
   scarf.visible = sc !== 'none'; up.visible = sc === 'up';
-  g.parts = { legs, torso, armL: L, armR: Rr, head, hat, hair, scarf, scarfUp: up, hatM, furM };
+  g.parts = { eyes, legs, torso, armL: L, armR: Rr, head, hat, hair, scarf, scarfUp: up, hatM, furM };
   // marche : phase en radians
   g.walk = (ph, amp = 0.5) => {
     legs[0].rotation.x = Math.sin(ph) * amp; legs[1].rotation.x = -Math.sin(ph) * amp;
