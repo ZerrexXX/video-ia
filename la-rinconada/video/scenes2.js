@@ -265,7 +265,7 @@ export function sCoca2() {
   const hand = new THREE.Group(); hand.position.y = -0.32; { const arm = miner.userData.arms[0]; const kids = arm.children.slice(1); kids.forEach((k) => { k.position.y += 0.32; hand.add(k); }); arm.add(hand); }
   const held = new THREE.Group();
   for (let i = 0; i < 14; i++) { const l = new THREE.Mesh(leafGeo, leafMat()); const a = (i / 13 - 0.5) * 2.2; l.scale.setScalar(0.19 + lr() * 0.05); l.position.set(Math.sin(a) * 0.06, -0.06 - Math.cos(a) * 0.03, 0.04 + i * 0.002); l.rotation.set((lr() - 0.5) * 0.3, (lr() - 0.5) * 0.4, a + Math.PI); held.add(l); }
-  held.position.set(0.02, -0.33, 0.12); held.rotation.set(0.9, 0, 0); hand.add(held); held.visible = false;
+  held.position.set(0.02, -0.33, 0.12); held.rotation.set(0.9, 0, 0); held.scale.setScalar(0.55); hand.add(held); held.visible = false;
   // bouche + feuilles de coca qui en dépassent
   const hd = miner.userData.head;
   const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), std(0x3a1410, { roughness: 0.6 })); mouth.scale.set(1.2, 0.55, 0.5); mouth.position.set(0, -0.075, 0.128); hd.add(mouth);
@@ -283,9 +283,16 @@ export function sCoca2() {
       legs[0].rotation.x = Math.sin(ph) * 0.4; legs[1].rotation.x = -Math.sin(ph) * 0.4;
       arms[1].rotation.x = Math.sin(ph) * 0.3; torso.rotation.x = 0.12;
       // la main côté caméra remonte la poignée de feuilles vers la bouche
-      const lift = 0;
-      arms[0].rotation.x = lerp(-Math.sin(ph) * 0.3, -1.05, lift); arms[0].rotation.z = lerp(0, 0.35, lift);
-      hand.rotation.x = lerp(0, -2.1 + Math.sin(t * 1.5) * 0.08, lift); hand.rotation.z = lerp(0, -0.4, lift);
+      // geste : prend une feuille dans la chuspa, la porte à la bouche, puis mâche
+      const reach = smooth(0.4, 1.0, t), raise = smooth(1.2, 2.0, t), release = smooth(2.5, 3.2, t);
+      const P0 = [-Math.sin(ph) * 0.3, 0, 0, 0], P1 = [-0.25, 0.2, -0.7, 0], P2 = [-1.45, 0.55, -2.25, -0.5];
+      const pose = P0.map((v, i) => lerp(lerp(lerp(v, P1[i], reach), P2[i], raise), P0[i], release));
+      arms[0].rotation.x = pose[0]; arms[0].rotation.z = pose[1]; hand.rotation.x = pose[2]; hand.rotation.z = pose[3];
+      held.visible = t > 0.95 && t < 1.95;
+      const pop = smooth(2.0, 2.4, t), chew = smooth(2.4, 2.8, t);
+      inMouth.scale.setScalar(Math.max(0.001, pop * (1 - 0.45 * smooth(2.6, 4.2, t))));
+      cheek.scale.setScalar(0.7 + chew * (0.12 + 0.1 * Math.abs(Math.sin(t * 7))));
+      hd.rotation.z = chew * Math.sin(t * 7) * 0.03;
       head.rotation.y = 0.3; head.rotation.x = -0.1;
       const cx = mx + 1.25, cz = mz - 1.45;
       c.position.set(cx, height(mx, mz) + 1.75, cz);
