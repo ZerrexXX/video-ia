@@ -38,7 +38,7 @@ export function height(x, z) {
   return h;
 }
 
-export function makeTerrain({ size = 420, seg = 220, snow = 30, mud = 0x4a3a2c } = {}) {
+export function makeTerrain({ size = 420, seg = 340, snow = 30, mud = 0x4a3a2c } = {}) {
   const g = new THREE.PlaneGeometry(size, size, seg, seg);
   g.rotateX(-Math.PI / 2);
   const p = g.attributes.position; const col = [];
@@ -55,7 +55,7 @@ export function makeTerrain({ size = 420, seg = 220, snow = 30, mud = 0x4a3a2c }
   }
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.computeVertexNormals();
-  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95, map: noiseTexture(70, 2), bumpMap: noiseTexture(140, 5), bumpScale: 2.5 }));
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 0.95, map: noiseTexture(70, 2), bumpMap: noiseTexture(140, 5), bumpScale: 3 }));
   m.receiveShadow = true;
   return m;
 }
@@ -103,6 +103,15 @@ export function makeTown({ count = 1600, seed = 7, xr = 70, z0 = -24, z1 = 45, n
   const wallCols = [0x8a8f94, 0x7d8288, 0x8b5a3c, 0x6e4a35, 0x2f5f9e, 0x9c7a5b, 0x5d6b73, 0xa04a32];
   const roofCols = [0xb8bdc2, 0xa7adb3, 0x8e7766, 0x9aa1a8, 0x7c5a44];
   const o = new THREE.Object3D(), c = new THREE.Color(); let n = 0, nw = 0;
+  const D = count;
+  const doors = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.9, map: noiseTexture(2, 3) }), D);
+  const frames = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x4a3626, roughness: 1 }), D);
+  const stones = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x6d655d, roughness: 1, flatShading: true }), D * 5);
+  const barrels = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 14), new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.2 }), D);
+  const pipes = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.07, 1, 8), new THREE.MeshStandardMaterial({ color: 0x2b2b2b, metalness: 0.7, roughness: 0.5 }), D);
+  const tarps = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1, 6, 6), new THREE.MeshStandardMaterial({ roughness: 0.7, side: THREE.DoubleSide }), D);
+  let nd = 0, ns = 0, nb = 0, np = 0, nt = 0;
+  const doorCols = [0x5b3a1e, 0x1f4f8a, 0x7a2e22, 0x2e5d34, 0x6b6b6b];
   for (let i = 0; i < count * 3 && n < count; i++) {
     const x = (r() * 2 - 1) * xr * (0.6 + 0.4 * r()), z = lerp(z0, z1, r());
     if (Math.abs(((x + 1000) % 13) - 6.5) < 0.9 && r() < 0.85) continue; // ruelles
@@ -113,6 +122,17 @@ export function makeTown({ count = 1600, seed = 7, xr = 70, z0 = -24, z1 = 45, n
     const tilt = (r() - 0.5) * 0.25;
     o.position.set(x, y + h - 0.15, z); o.rotation.set(tilt, rot, (r() - 0.5) * 0.15); o.scale.set(w * 1.12, 0.12, d * 1.15); o.updateMatrix();
     roofs.setMatrixAt(n, o.matrix); roofs.setColorAt(n, c.setHex(roofCols[(r() * roofCols.length) | 0]));
+    { // porte + encadrement sur la façade avant
+      const fx = Math.sin(rot), fz = Math.cos(rot), side = (r() - 0.5) * (w - 1.2);
+      const px = x + fx * (d / 2 + 0.03) + Math.cos(rot) * side, pz = z + fz * (d / 2 + 0.03) - Math.sin(rot) * side;
+      o.position.set(px, y + 0.75 - 0.2, pz); o.rotation.set(0, rot, 0); o.scale.set(0.8, 1.5, 0.05); o.updateMatrix(); doors.setMatrixAt(nd, o.matrix); doors.setColorAt(nd, c.setHex(doorCols[(r() * doorCols.length) | 0]));
+      o.scale.set(0.95, 1.62, 0.03); o.position.set(px - fx * 0.01, y + 0.78 - 0.2, pz - fz * 0.01); o.updateMatrix(); frames.setMatrixAt(nd, o.matrix); nd++;
+    }
+    const k = 2 + ((r() * 4) | 0);
+    for (let q = 0; q < k && ns < D * 5; q++) { const ss = 0.12 + r() * 0.16; o.position.set(x + (r() - 0.5) * w * 0.9, y + h + ss * 0.4, z + (r() - 0.5) * d * 0.9); o.rotation.set(r() * 3, r() * 3, r() * 3); o.scale.set(ss, ss * 0.7, ss); o.updateMatrix(); stones.setMatrixAt(ns, o.matrix); stones.setColorAt(ns, c.setHex(0x6d655d).multiplyScalar(0.7 + r() * 0.5)); ns++; }
+    if (r() < 0.35) { const bx = x + Math.cos(rot) * (w / 2 + 0.4), bz = z - Math.sin(rot) * (w / 2 + 0.4); o.position.set(bx, height(bx, bz) + 0.42, bz); o.rotation.set(0, 0, 0); o.scale.set(1, 1, 1); o.updateMatrix(); barrels.setMatrixAt(nb, o.matrix); barrels.setColorAt(nb, c.setHex([0x1565c0, 0x1e88e5, 0xc62828, 0x2e7d32, 0x9e9e9e][(r() * 5) | 0])); nb++; }
+    if (r() < 0.3) { o.position.set(x + (r() - 0.5) * w * 0.5, y + h + 0.45, z + (r() - 0.5) * d * 0.5); o.rotation.set(0, 0, 0); o.scale.set(1, 1.1, 1); o.updateMatrix(); pipes.setMatrixAt(np, o.matrix); np++; }
+    if (r() < 0.12) { o.position.set(x, y + h + 0.02, z); o.rotation.set(-Math.PI / 2 + (r() - 0.5) * 0.2, 0, rot); o.scale.set(w * 0.8, d * 0.7, 1); o.updateMatrix(); tarps.setMatrixAt(nt, o.matrix); tarps.setColorAt(nt, c.setHex([0x1e5bb3, 0x2f7d32, 0xd9822b, 0x9e2a2b][(r() * 4) | 0]).multiplyScalar(0.55)); nt++; }
     if (windows && r() < 0.55) {
       const dx = Math.sin(rot) * (d / 2 + 0.02), dz = Math.cos(rot) * (d / 2 + 0.02);
       o.position.set(x + dx + (r() - 0.5) * w * 0.4, y + h * 0.55, z + dz); o.rotation.set(0, rot, 0); o.scale.set(1, 1, 1); o.updateMatrix();
@@ -121,6 +141,8 @@ export function makeTown({ count = 1600, seed = 7, xr = 70, z0 = -24, z1 = 45, n
     n++;
   }
   walls.count = roofs.count = n; wins.count = nw;
+  doors.count = frames.count = nd; stones.count = ns; barrels.count = nb; pipes.count = np; tarps.count = nt;
+  [doors, frames, stones, barrels, pipes, tarps].forEach((m) => { m.castShadow = true; m.receiveShadow = true; grp.add(m); });
   walls.castShadow = roofs.castShadow = true; walls.receiveShadow = roofs.receiveShadow = true;
   grp.add(walls, roofs); if (windows) grp.add(wins);
   grp.userData.wins = wins;
@@ -231,9 +253,9 @@ export function tinTextures() {
   if (_tex.tin) return _tex.tin;
   const r = rng(99);
   const draw = (bump) => (x, w, h) => {
-    for (let i = 0; i < w; i++) { const v = 0.5 + 0.5 * Math.sin((i / w) * Math.PI * 2 * 16); const g = bump ? v * 255 : 150 + v * 70; x.fillStyle = `rgb(${g},${g},${g})`; x.fillRect(i, 0, 1, h); }
+    for (let i = 0; i < w; i++) { const v = 0.5 + 0.5 * Math.sin((i / w) * Math.PI * 2 * 40); const g = bump ? v * 255 : 165 + v * 55; x.fillStyle = `rgb(${g},${g},${g})`; x.fillRect(i, 0, 1, h); }
     if (!bump) {
-      for (let k = 0; k < 140; k++) { const rx = r() * w, ry = r() * h, rr = 4 + r() * 30; const gr = x.createRadialGradient(rx, ry, 0, rx, ry, rr); gr.addColorStop(0, `rgba(${120 + r() * 50},${60 + r() * 30},${30},${0.5 + r() * 0.4})`); gr.addColorStop(1, 'rgba(120,60,30,0)'); x.fillStyle = gr; x.fillRect(rx - rr, ry - rr, rr * 2, rr * 2); }
+      for (let k = 0; k < 140; k++) { const rx = r() * w, ry = r() * h, rr = 3 + r() * 14; const gr = x.createRadialGradient(rx, ry, 0, rx, ry, rr); gr.addColorStop(0, `rgba(${120 + r() * 50},${60 + r() * 30},${30},${0.5 + r() * 0.4})`); gr.addColorStop(1, 'rgba(120,60,30,0)'); x.fillStyle = gr; x.fillRect(rx - rr, ry - rr, rr * 2, rr * 2); }
       for (let k = 0; k < 60; k++) { x.fillStyle = `rgba(40,30,25,${0.15 + r() * 0.25})`; x.fillRect(r() * w, r() * h, 1 + r() * 2, 10 + r() * 60); }
     }
   };
@@ -369,7 +391,7 @@ export function makePerson2({ type = 'miner', skirt = 0xc2185b, shawl = 0x1565c0
 // Langue de glacier avec séracs et crevasses
 export function makeGlacier({ x = 5, z = -62, w = 120, d = 50, seed = 3 } = {}) {
   const g = new THREE.PlaneGeometry(w, d, 160, 70); g.rotateX(-Math.PI / 2);
-  const p = g.attributes.position, col = [], c = new THREE.Color(), cA = new THREE.Color(0xf2f7fb), cB = new THREE.Color(0x8fc1e0), cC = new THREE.Color(0x3f7fae);
+  const p = g.attributes.position, col = [], c = new THREE.Color(), cA = new THREE.Color(0xd5e0e8), cB = new THREE.Color(0x8fc1e0), cC = new THREE.Color(0x3f7fae);
   for (let i = 0; i < p.count; i++) {
     const lx = p.getX(i), lz = p.getZ(i), X = lx + x, Z = lz + z;
     const rr = Math.hypot(lx / (w / 2), lz / (d / 2)) + (fbm(X * 0.06, Z * 0.06) - 0.5) * 0.7;
@@ -382,7 +404,32 @@ export function makeGlacier({ x = 5, z = -62, w = 120, d = 50, seed = 3 } = {}) 
   }
   g.translate(x, 0, z);
   g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
-  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.25, metalness: 0.05, flatShading: true }));
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.0, flatShading: true, bumpMap: noiseTexture(30, 11), bumpScale: 3 }));
   m.receiveShadow = true; m.castShadow = true;
   return m;
+}
+
+export function makeBoulders({ count = 2500, seed = 23 } = {}) {
+  const r = rng(seed);
+  const m = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0x7a7066, roughness: 1, flatShading: true, bumpMap: noiseTexture(3, 8), bumpScale: 4 }), count);
+  const o = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
+  for (let i = 0; i < count * 3 && n < count; i++) {
+    const x = (r() * 2 - 1) * 190, z = (r() * 2 - 1) * 190, y = height(x, z);
+    if (Math.abs(x) < 70 && z > -26 && z < 46) continue;
+    if (y > 34) continue;
+    const s = 0.2 + Math.pow(r(), 4) * 1.4;
+    o.position.set(x, y - s * 0.25, z); o.rotation.set(r() * 6, r() * 6, r() * 6); o.scale.set(s, s * (0.5 + r() * 0.4), s * (0.7 + r() * 0.5)); o.updateMatrix();
+    m.setMatrixAt(n, o.matrix); m.setColorAt(n, c.setHex(0x7a7066).multiplyScalar(0.75 + r() * 0.45)); n++;
+  }
+  m.count = n; m.castShadow = m.receiveShadow = true; return m;
+}
+export function makePuddles({ count = 90, seed = 29 } = {}) {
+  const r = rng(seed), g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x1d1a17, metalness: 0.9, roughness: 0.08 });
+  for (let i = 0; i < count; i++) {
+    const x = Math.round((r() * 2 - 1) * 5) * 13 - 6.5 + (r() - 0.5) * 1.5, z = r() * 60 - 20;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(1, 20), mat); m.rotation.x = -Math.PI / 2; m.scale.set(0.6 + r() * 1.8, 0.4 + r() * 1.2, 1);
+    m.position.set(x, height(x, z) + 0.06, z); m.receiveShadow = true; g.add(m);
+  }
+  return g;
 }

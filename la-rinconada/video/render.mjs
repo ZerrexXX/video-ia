@@ -19,7 +19,7 @@ const mode = process.argv[2] || 'preview';
 if (mode === 'preview' || mode === 'still') {
   const ts = (process.argv[3] || '2,8,15,20,27,31,35,39,43,48,52,55,59,64,68,72,76,83').split(',').map(Number);
   fs.mkdirSync(path.join(root, 'preview'), { recursive: true }); fs.mkdirSync(path.join(root, 'images'), { recursive: true });
-  for (const t of ts) { const t0 = Date.now(); await page.evaluate((t) => window.renderAt(t), t); await page.screenshot({ path: path.join(root, mode === 'still' ? 'images' : 'preview', `t${String(t).padStart(5, '0')}.${mode === 'still' ? 'png' : 'jpg'}`), ...(mode === 'still' ? { type: 'png' } : { type: 'jpeg', quality: 80 }) }); console.log('t', t, Date.now() - t0, 'ms'); }
+  for (const t of ts) { const t0 = Date.now(); await page.evaluate((t) => window.renderAt(t), t); await page.screenshot({ timeout: 300000, path: path.join(root, mode === 'still' ? 'images' : 'preview', `t${String(t).padStart(5, '0')}.${mode === 'still' ? 'png' : 'jpg'}`), ...(mode === 'still' ? { type: 'png' } : { type: 'jpeg', quality: 80 }) }); console.log('t', t, Date.now() - t0, 'ms'); }
 } else {
   const fps = Number(process.argv[3] || 30), dur = await page.evaluate('window.DUR');
   const n = Math.ceil(dur * fps);
@@ -28,7 +28,7 @@ if (mode === 'preview' || mode === 'still') {
   const t0 = Date.now();
   for (let f = 0; f < n; f++) {
     await page.evaluate((t) => window.renderAt(t), f / fps);
-    const buf = await page.screenshot({ type: 'jpeg', quality: 92 });
+    const buf = await page.screenshot({ timeout: 300000, type: 'jpeg', quality: 92 });
     if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
     if (f % 150 === 0) console.log(`frame ${f}/${n} — ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   }

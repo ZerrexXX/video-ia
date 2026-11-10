@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   clamp, lerp, smooth, ease, rng, fbm, height, makeTerrain, makeSky, makeStars, makeTown, makeTrash,
-  makePerson, makeRocks, makeParticles, updateParticles, softTexture, corrugated, makePoles, makeSmoke, noiseTexture, makePerson2, makeGlacier
+  makePerson, makeRocks, makeParticles, updateParticles, softTexture, corrugated, makePoles, makeSmoke, noiseTexture, makePerson2, makeGlacier, makeBoulders, makePuddles
 } from './lib.js';
 
 const ASPECT = 16 / 9;
@@ -32,6 +32,8 @@ function townScene({ mood }) {
   s.add(makeTrash());
   s.add(makePoles());
   s.add(makeGlacier());
+  s.add(makeBoulders());
+  s.add(makePuddles());
   const smoke = makeSmoke({ color: mood === 'night' ? 0x4a5670 : 0xb8b4ae, opacity: mood === 'night' ? 0.25 : 0.18 }); s.add(smoke.group);
   if (mood !== 'night') {
     const cr = rng(31);
@@ -40,7 +42,7 @@ function townScene({ mood }) {
   const walkers = [];
   const wr = rng(44);
   for (let i = 0; i < 24; i++) { const w = makePerson2({ type: wr() < 0.5 ? 'miner' : 'woman', skirt: [0xc2185b, 0x6a1b9a, 0x2e7d32, 0xd84315][i % 4], shawl: [0x1565c0, 0xef6c00, 0xad1457][i % 3], seed: 100 + i }); w.scale.setScalar(1.6); w.userData.p = { x: Math.round((wr() * 2 - 1) * 4) * 13 - 6.5 + (wr() - 0.5), z: wr() * 50 - 10, sp: (0.6 + wr() * 0.6) * (wr() < 0.5 ? 1 : -1) }; s.add(w); walkers.push(w); }
-  const animWalk = (t) => walkers.forEach((w) => { const p = w.userData.p, z = p.z + t * p.sp; w.position.set(p.x, height(p.x, z), z); w.rotation.y = p.sp > 0 ? 0 : Math.PI; const ph = t * 5; if (w.userData.legs) { w.userData.legs[0].rotation.x = Math.sin(ph) * 0.5; w.userData.legs[1].rotation.x = -Math.sin(ph) * 0.5; } w.userData.arms[0].rotation.x = -Math.sin(ph) * 0.4; w.userData.arms[1].rotation.x = Math.sin(ph) * 0.4; });
+  const animWalk = (t) => walkers.forEach((w) => { const p = w.userData.p, z = -12 + ((((p.z + t * p.sp) + 12) % 52) + 52) % 52; w.position.set(p.x, height(p.x, z), z); w.rotation.y = p.sp > 0 ? 0 : Math.PI; const ph = t * 5; if (w.userData.legs) { w.userData.legs[0].rotation.x = Math.sin(ph) * 0.5; w.userData.legs[1].rotation.x = -Math.sin(ph) * 0.5; } w.userData.arms[0].rotation.x = -Math.sin(ph) * 0.4; w.userData.arms[1].rotation.x = Math.sin(ph) * 0.4; });
   // lueur d'or sous le glacier
   const glow = new THREE.PointLight(0xffc040, 0, 60, 1.5); glow.position.set(5, height(5, -70) - 1, -70); s.add(glow);
   const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture(), color: 0xffcc55, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
@@ -148,7 +150,7 @@ export function sCity() {
       c.lookAt(look);
       const gk = smooth(29.8, 31.5, g);
       glow.intensity = gk * 900; glowSprite.material.opacity = gk * 0.95; tick(t + 20);
-    }, post: { bloom: [0.5, 0.6, 0.9], grade: [1.12, 1.1, 1.06] }
+    }, post: { bloom: [0.4, 0.6, 1.0], grade: [1.22, 1.2, 1.17] }
   };
 }
 
@@ -161,7 +163,8 @@ export function sCoca() {
   const sun = new THREE.DirectionalLight(0xffe2b8, 2); sun.position.set(40, 60, 30); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20 }); s.add(sun);
   const terr = makeTerrain(); s.add(terr);
-  const base = new THREE.Vector3(-8, 0, -18);
+  s.add(makeTown({ windows: false })); s.add(makePoles()); s.add(makeBoulders()); s.add(makeGlacier());
+  const base = new THREE.Vector3(-8, 0, -27);
   const miner = makePerson2({ type: 'miner', seed: 3 }); s.add(miner);
   // feuilles de coca
   const leafShape = new THREE.Shape(); leafShape.moveTo(0, -0.5); leafShape.quadraticCurveTo(0.32, 0, 0, 0.5); leafShape.quadraticCurveTo(-0.32, 0, 0, -0.5);
@@ -194,7 +197,7 @@ export function sCoca() {
         l.position.copy(c.position).addScaledVector(fwd, 1.6 - u.z).addScaledVector(right, u.x + Math.sin(t + u.rot) * 0.15).addScaledVector(up, y);
         l.rotation.set(u.rot + t * u.rs, u.rot * 0.7 + t * 0.5, t * u.rs * 0.5); l.scale.setScalar(u.sc);
       });
-    }, post: { bloom: [0.35, 0.5, 0.9], grade: [1.2, 1.14, 1.04], dof: { aperture: 0.004, maxblur: 0.01 } }
+    }, post: { bloom: [0.35, 0.5, 0.9], grade: [1.4, 1.33, 1.22], dof: { aperture: 0.0008, maxblur: 0.006 } }
   };
 }
 
