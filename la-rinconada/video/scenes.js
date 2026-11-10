@@ -9,7 +9,7 @@ const ASPECT = 16 / 9;
 const cam = (fov = 45) => new THREE.PerspectiveCamera(fov, ASPECT, 0.05, 2000);
 
 // ---------- Ville (partagée par plusieurs scènes, avec éclairage variable) ----------
-function townScene({ mood }) {
+export function townScene({ mood }) {
   const s = new THREE.Scene();
   const moods = {
     night: { top: 0x060b1a, hor: 0x24365a, fog: 0x15223a, fogD: 0.0035, amb: 0x5a6f99, ambI: 1.1, sun: 0xa8c0f0, sunI: 1.1, sunPos: [-80, 120, -40], win: 1 },
