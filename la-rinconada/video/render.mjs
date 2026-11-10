@@ -11,13 +11,15 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('[page]', m.text()); });
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
-await page.goto(`http://localhost:${port}/index.html`);
+const STILL = process.argv[2] === 'still';
+if (STILL) await page.setViewportSize({ width: 1920, height: 1080 });
+await page.goto(`http://localhost:${port}/index.html${STILL ? '?still=1' : ''}`);
 await page.waitForFunction('window.ready === true', null, { timeout: 120000 });
 const mode = process.argv[2] || 'preview';
-if (mode === 'preview') {
+if (mode === 'preview' || mode === 'still') {
   const ts = (process.argv[3] || '2,8,15,20,27,31,35,39,43,48,52,55,59,64,68,72,76,83').split(',').map(Number);
-  fs.mkdirSync(path.join(root, 'preview'), { recursive: true });
-  for (const t of ts) { const t0 = Date.now(); await page.evaluate((t) => window.renderAt(t), t); await page.screenshot({ path: path.join(root, 'preview', `t${String(t).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 80 }); console.log('t', t, Date.now() - t0, 'ms'); }
+  fs.mkdirSync(path.join(root, 'preview'), { recursive: true }); fs.mkdirSync(path.join(root, 'images'), { recursive: true });
+  for (const t of ts) { const t0 = Date.now(); await page.evaluate((t) => window.renderAt(t), t); await page.screenshot({ path: path.join(root, mode === 'still' ? 'images' : 'preview', `t${String(t).padStart(5, '0')}.${mode === 'still' ? 'png' : 'jpg'}`), ...(mode === 'still' ? { type: 'png' } : { type: 'jpeg', quality: 80 }) }); console.log('t', t, Date.now() - t0, 'ms'); }
 } else {
   const fps = Number(process.argv[3] || 30), dur = await page.evaluate('window.DUR');
   const n = Math.ceil(dur * fps);

@@ -91,6 +91,40 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 document.body.prepend(renderer.domElement);
 const scenes = SCENES.map((f) => f(renderer));
+const { EffectComposer } = await import('three/addons/postprocessing/EffectComposer.js');
+const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js');
+const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js');
+const { BokehPass } = await import('three/addons/postprocessing/BokehPass.js');
+const { ShaderPass } = await import('three/addons/postprocessing/ShaderPass.js');
+const { OutputPass } = await import('three/addons/postprocessing/OutputPass.js');
+const Grade = {
+  uniforms: { tDiffuse: { value: null }, tint: { value: new THREE.Vector3(1, 1, 1) }, time: { value: 0 }, grain: { value: 0.045 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec3 tint; uniform float time, grain; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)) + time*7.13) * 43758.5453); }
+    void main(){
+      vec2 d = vUv - 0.5; float ca = 0.0012 * length(d) * 2.0;
+      vec4 c = vec4(texture2D(tDiffuse, vUv - d*ca).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv + d*ca).b, 1.0);
+      c.rgb *= tint;
+      float l = dot(c.rgb, vec3(0.299,0.587,0.114));
+      c.rgb = mix(vec3(l), c.rgb, 1.08);
+      c.rgb = (c.rgb - 0.5) * 1.06 + 0.5;
+      c.rgb += (h(vUv*1000.0) - 0.5) * grain;
+      gl_FragColor = vec4(max(c.rgb, 0.0), 1.0);
+    }`
+};
+const rt = new THREE.WebGLRenderTarget(1920, 1080, { type: THREE.HalfFloatType, samples: 4 });
+for (const sc of scenes) {
+  const p = sc.post || {}, comp = new EffectComposer(renderer, rt.clone());
+  comp.setSize(1920, 1080);
+  comp.addPass(new RenderPass(sc.scene, sc.camera));
+  if (p.dof) { const b = new BokehPass(sc.scene, sc.camera, { focus: 5, aperture: p.dof.aperture, maxblur: p.dof.maxblur }); comp.addPass(b); sc.bokeh = b; }
+  const [bs, br, bt] = p.bloom || [0.5, 0.5, 0.8];
+  comp.addPass(new UnrealBloomPass(new THREE.Vector2(960, 540), bs, br, bt));
+  comp.addPass(new OutputPass());
+  const g = new ShaderPass(Grade); g.uniforms.tint.value.set(...(p.grade || [1, 1, 1])); comp.addPass(g); sc.grade = g;
+  sc.comp = comp;
+}
 
 const cal = document.querySelector('#cal .grid');
 for (let i = 1; i <= 30; i++) { const d = document.createElement('div'); d.className = 'd'; d.textContent = i; cal.appendChild(d); }
@@ -99,18 +133,22 @@ const $ = (id) => document.getElementById(id);
 const op = (id, v) => { $(id).style.opacity = v.toFixed(3); };
 
 window.DUR = DUR;
+const STILL = new URLSearchParams(location.search).has('still');
+if (STILL) { renderer.setPixelRatio(2); scenes.forEach((sc) => { sc.comp.setPixelRatio(2); }); document.querySelectorAll('.ov,#cap,#heart').forEach((e) => e.style.display = 'none'); }
 window.renderAt = (t) => {
   let i = bounds.findIndex(([a, b]) => t >= a && t < b); if (i < 0) i = bounds.length - 1;
   const [a, b] = bounds[i], sc = scenes[i];
   sc.update(t - a, b - a, t);
-  renderer.render(sc.scene, sc.camera);
+  if (sc.bokeh) sc.bokeh.uniforms.focus.value = sc.camera.userData.focus ?? 5;
+  sc.grade.uniforms.time.value = t;
+  sc.comp.render();
 
   // fondu au noir entre les scènes
   let f = 1 - smooth(a, a + 0.35, t);
   if (i < bounds.length - 1) f = Math.max(f, smooth(b - 0.2, b, t));
   if (i === 0) f = 1 - smooth(0, 0.6, t);
   f = Math.max(f, smooth(DUR - 1.4, DUR - 0.1, t));
-  op('fade', f);
+  op('fade', STILL ? 0 : f);
 
   // sous-titres
   const cur = S.find((x) => t >= x.start - 0.05 && t < x.end + 0.15);
