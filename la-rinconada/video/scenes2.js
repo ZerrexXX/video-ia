@@ -250,31 +250,41 @@ export function sCoca2() {
   const { s, tick, sun } = townScene({ mood: 'day' });
   sun.position.set(-60, 70, 40); sun.intensity = 3.2;
   addMines(s, { gold: false });
-  const line = addMinerLine(s, { n: 10, x0: -9, z0: -29, z1: -39 });
+  const line = addMinerLine(s, { n: 8, x0: -16, z0: -24, z1: -38 });
   const miner = makePerson2({ type: 'miner', seed: 3 }); s.add(miner);
-  const chuspa = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.22, 0.06), std(0xffffff, { map: stripeTexture(17) })); miner.userData.torso.add(chuspa); chuspa.position.set(0.28, 0.02, 0.06);
-  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.012, 6, 30), std(0xd81b60)); strap.rotation.set(0, 0, 0.7); strap.position.set(0.05, 0.3, 0); strap.scale.set(1, 1.2, 0.8); miner.userData.torso.add(strap);
-  const lsh = new THREE.Shape(); lsh.moveTo(0, -0.5); lsh.quadraticCurveTo(0.32, 0, 0, 0.5); lsh.quadraticCurveTo(-0.32, 0, 0, -0.5);
-  const leafGeo = new THREE.ShapeGeometry(lsh, 8);
-  const leafMat = std(0x3f7d2a, { side: THREE.DoubleSide, roughness: 0.5 });
-  const hand = miner.userData.arms[1];
-  const held = new THREE.Group(); for (let i = 0; i < 5; i++) { const l = new THREE.Mesh(leafGeo, leafMat); l.scale.setScalar(0.07); l.rotation.set(i * 0.4, i * 0.6, i * 0.3); held.add(l); } held.position.set(0, -0.66, 0.04); hand.add(held);
-  const c = cam(42);
+  const lsh = new THREE.Shape(); lsh.moveTo(0, -0.5); lsh.quadraticCurveTo(0.34, -0.05, 0, 0.5); lsh.quadraticCurveTo(-0.34, -0.05, 0, -0.5);
+  const leafGeo = new THREE.ShapeGeometry(lsh, 10);
+  { const p = leafGeo.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.abs(p.getX(i)) * 0.35); leafGeo.computeVertexNormals(); }
+  const lr = rng(66);
+  const leafMat = () => std(new THREE.Color(0x4f9a32).multiplyScalar(0.75 + lr() * 0.45), { side: THREE.DoubleSide, roughness: 0.45, emissive: 0x0d2a08, emissiveIntensity: 0.6 });
+  // chuspa (bourse à coca) ouverte, côté caméra, avec des feuilles qui dépassent
+  const chuspa = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.24, 0.08), std(0xffffff, { map: stripeTexture(17) })); miner.userData.torso.add(chuspa); chuspa.position.set(-0.3, 0.0, 0.08);
+  for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(leafGeo, leafMat()); l.scale.setScalar(0.09); l.position.set(-0.3 + (lr() - 0.5) * 0.15, 0.13 + lr() * 0.03, 0.08 + (lr() - 0.5) * 0.04); l.rotation.set((lr() - 0.5) * 0.6, lr() * 3, (lr() - 0.5) * 0.8); miner.userData.torso.add(l); }
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.012, 6, 30), std(0xd81b60)); strap.rotation.set(0, 0, -0.7); strap.position.set(-0.05, 0.3, 0); strap.scale.set(1, 1.2, 0.8); miner.userData.torso.add(strap);
+  // poignée de feuilles dans la main côté caméra, en éventail
+  const hand = new THREE.Group(); hand.position.y = -0.32; { const arm = miner.userData.arms[0]; const kids = arm.children.slice(1); kids.forEach((k) => { k.position.y += 0.32; hand.add(k); }); arm.add(hand); }
+  const held = new THREE.Group();
+  for (let i = 0; i < 14; i++) { const l = new THREE.Mesh(leafGeo, leafMat()); const a = (i / 13 - 0.5) * 2.2; l.scale.setScalar(0.19 + lr() * 0.05); l.position.set(Math.sin(a) * 0.06, -0.06 - Math.cos(a) * 0.03, 0.04 + i * 0.002); l.rotation.set((lr() - 0.5) * 0.3, (lr() - 0.5) * 0.4, a + Math.PI); held.add(l); }
+  held.position.set(0.02, -0.33, 0.12); held.rotation.set(0.9, 0, 0); hand.add(held);
+  // joue gonflée (boule de coca)
+  const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), std(0x8a5636, { roughness: 0.6 })); cheek.position.set(-0.09, -0.04, 0.07); miner.userData.head.add(cheek);
+  const c = cam(38);
   return {
     scene: s, camera: c, update(t, d) {
-      const mz = -26 - t * 0.6, mx = -8;
+      const mz = -31 - t * 0.5, mx = -8;
       miner.position.set(mx, height(mx, mz), mz); miner.rotation.y = Math.PI;
-      const ph = t * 4.5, { legs, arms, torso, head } = miner.userData;
-      legs[0].rotation.x = Math.sin(ph) * 0.45; legs[1].rotation.x = -Math.sin(ph) * 0.45;
-      arms[0].rotation.x = -Math.sin(ph) * 0.35; torso.rotation.x = 0.15;
-      // main droite portée à la bouche par moments
-      const eat = smooth(0.3, 1.0, t) * (1 - smooth(3.6, 4.4, t));
-      arms[1].rotation.x = lerp(Math.sin(ph) * 0.35, -2.3, eat); arms[1].rotation.z = lerp(0, 0.5, eat);
-      head.rotation.y = 0.5 * (1 - eat);
-      const cx = mx + 3.4, cz = mz + 0.4;
-      c.position.set(cx, height(mx, mz) + 1.35, cz);
-      c.lookAt(mx - 0.2, height(mx, mz) + 1.7, mz - 1.4);
-      c.userData.focus = c.position.distanceTo(miner.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+      const ph = t * 4.2, { legs, arms, torso, head } = miner.userData;
+      legs[0].rotation.x = Math.sin(ph) * 0.4; legs[1].rotation.x = -Math.sin(ph) * 0.4;
+      arms[1].rotation.x = Math.sin(ph) * 0.3; torso.rotation.x = 0.12;
+      // la main côté caméra remonte la poignée de feuilles vers la bouche
+      const lift = smooth(0.2, 1.2, t);
+      arms[0].rotation.x = lerp(-Math.sin(ph) * 0.3, -1.05, lift); arms[0].rotation.z = lerp(0, 0.35, lift);
+      hand.rotation.x = lerp(0, -2.1 + Math.sin(t * 1.5) * 0.08, lift); hand.rotation.z = lerp(0, -0.4, lift);
+      head.rotation.y = 0.3; head.rotation.x = -0.1;
+      const cx = mx + 1.9, cz = mz - 2.1;
+      c.position.set(cx, height(mx, mz) + 1.6, cz);
+      c.lookAt(mx + 0.1, height(mx, mz) + 1.5, mz);
+      c.userData.focus = c.position.distanceTo(miner.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
       tick(t + 30); line(t);
     }, post: { bloom: [0.35, 0.5, 0.95], grade: [1.15, 1.12, 1.06], dof: { aperture: 0.0025, maxblur: 0.008 } }
   };
