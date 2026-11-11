@@ -62,7 +62,7 @@ export function sHook() {
       const k = ease(t / d);
       c.position.set(lerp(-70, -45, k), lerp(55, 30, k), lerp(90, 62, k));
       c.lookAt(lerp(0, 5, k), lerp(5, 3, k), lerp(0, 5, k));
-      snow.position.copy(c.position);
+      { const f = new THREE.Vector3(); c.getWorldDirection(f); snow.position.copy(c.position).addScaledVector(f, 24); snow.lookAt(c.position); }
       updateParticles(snow, t, (i, t, a, b, cc) => [a * t * 2, -t * (1.5 + b), cc * t]); tick(t);
     }, post: { bloom: [0.9, 0.6, 0.6], grade: [0.85, 0.95, 1.15] }
   };
