@@ -25,19 +25,23 @@ if (mode === 'preview' || mode === 'still') {
   // rendu par segments reprenables : node render.mjs seg [fps] [images par segment]
   const fps = Number(process.argv[3] || 30), per = Number(process.argv[4] || 150), dur = await page.evaluate('window.DUR');
   const n = Math.ceil(dur * fps), segDir = path.join(root, 'segs'); fs.mkdirSync(segDir, { recursive: true });
-  for (let s0 = 0, k = 0; s0 < n; s0 += per, k++) {
-    const out = path.join(segDir, `s${String(k).padStart(3, '0')}.mp4`);
-    if (fs.existsSync(out)) continue;
-    const tmp = out.replace('.mp4', '.tmp.mp4'), t0 = Date.now();
+  // fichiers rDEBUT_NOMBRE.mp4 : reprise exacte là où le rendu s'est arrêté
+  const have = new Map(fs.readdirSync(segDir).filter((f) => /^r\d{5}_\d+\.mp4$/.test(f)).map((f) => { const m = f.match(/^r(\d{5})_(\d+)/); return [Number(m[1]), Number(m[2])]; }));
+  let s0 = 0;
+  while (s0 < n) {
+    if (have.has(s0)) { s0 += have.get(s0); continue; }
+    const cnt = Math.min(per, n - s0), out = path.join(segDir, `r${String(s0).padStart(5, '0')}_${cnt}.mp4`);
+    const tmp = path.join(segDir, 'en-cours.tmp.mp4'), t0 = Date.now();
     const ff = spawn('ffmpeg', ['-y', '-v', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-', '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-pix_fmt', 'yuv420p', tmp], { stdio: ['pipe', 'inherit', 'inherit'] });
-    for (let f = s0; f < Math.min(n, s0 + per); f++) {
+    for (let f = s0; f < s0 + cnt; f++) {
       await page.evaluate((t) => window.renderAt(t), f / fps);
       const buf = await page.screenshot({ timeout: 300000, type: 'png' });
       if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
     }
     ff.stdin.end(); await new Promise((r) => ff.on('close', r));
     fs.renameSync(tmp, out);
-    console.log(`segment ${k} (${s0}-${Math.min(n, s0 + per) - 1}) ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    console.log(`segment ${s0}-${s0 + cnt - 1} / ${n} ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    s0 += cnt;
   }
   console.log('ALL_DONE');
 } else {
